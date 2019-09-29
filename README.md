@@ -30,9 +30,9 @@ Q_MESSAGE_META(QTestMessage, false, true, nullptr)
 ```
 + 订阅、发布消息
 ```cpp
-    QEventBus bus;
-    bus.publish(QTestMessage());
-    bus.subscribe<QTestMessage>(test, [](auto & m) {
-        qDebug() << m.name.c_str();
-    });
+QEventBus bus;
+bus.publish(QTestMessage());
+bus.subscribe<QTestMessage>(test, [](auto & m) {
+    qDebug() << m.name.c_str();
+});
 ```
