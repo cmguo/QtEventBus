@@ -9,8 +9,8 @@ A event bus for Qt.
 + 可以对接外部消息转发系统（通过主题对应，字符串消息）
 + 可以接收过去最后一个消息（粘性消息，订阅时单独发送）
 
-使用：
-创建一个消息类
+# 使用：
++ 创建一个消息类
 ```cpp
 class QTestMessage
 {
@@ -28,7 +28,7 @@ public:
 // 消息模式（external, stick, topic）
 Q_MESSAGE_META(QTestMessage, false, true, nullptr)
 ```
-订阅、发布消息
++ 订阅、发布消息
 ```cpp
     QEventBus bus;
     bus.publish(QTestMessage());
