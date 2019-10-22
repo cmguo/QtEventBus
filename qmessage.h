@@ -107,6 +107,7 @@ public:
     bool unsubscribe(QObject const * o, F f) {
         (void)o;
         (void)f;
+        return false;
     }
 
     bool unsubscribe(QObject const * o) {
