@@ -29,9 +29,9 @@ HEADERS += \
     qmessagedata.h \
     qtestmessage.h
 
-INCLUDEPATH += ../QtComposition/
-
-LIBS += -L..\QtComposition\debug -lQtComposition
+CONFIG(debug, debug|release) {
+    win32: TARGET = $$join(TARGET,,,d)
+}
 
 includes.files = $$PWD/*.h $$PWD/*.hpp
 win32 {
@@ -45,3 +45,10 @@ unix {
     target.path = /usr/lib
 }
 !isEmpty(target.path): INSTALLS += target
+
+win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../QtComposition/release/ -lQtComposition
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../QtComposition/debug/ -lQtCompositiond
+else:unix: LIBS += -L$$OUT_PWD/../QtComposition/ -lQtCompositiond
+
+INCLUDEPATH += $$PWD/../QtComposition
+DEPENDPATH += $$PWD/../QtComposition
