@@ -1,4 +1,4 @@
-# QEventBus
+# QtEventBus
 A event bus for Qt.
 
 # 特性：
