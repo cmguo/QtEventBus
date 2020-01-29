@@ -3,7 +3,7 @@ QT -= gui
 TEMPLATE = lib
 DEFINES += QTEVENTBUS_LIBRARY
 
-CONFIG += c++11
+CONFIG += c++14
 
 # The following define makes your compiler emit warnings if you use
 # any Qt feature that has been marked deprecated (the exact warnings
@@ -48,7 +48,7 @@ unix {
 
 win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../QtComposition/release/ -lQtComposition
 else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../QtComposition/debug/ -lQtCompositiond
-else:unix: LIBS += -L$$OUT_PWD/../QtComposition/ -lQtCompositiond
+else:unix: LIBS += -L$$OUT_PWD/../QtComposition/ -lQtComposition
 
 INCLUDEPATH += $$PWD/../QtComposition
 DEPENDPATH += $$PWD/../QtComposition
