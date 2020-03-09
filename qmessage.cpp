@@ -1,6 +1,6 @@
 #include "qmessage.h"
 
-QMessageBase::QMessageBase(bool external, bool stick, std::string const & topic)
+QMessageBase::QMessageBase(bool external, bool stick, QByteArray const & topic)
     : external_(external)
     , stick_(stick)
     , topic_(topic)
@@ -8,6 +8,6 @@ QMessageBase::QMessageBase(bool external, bool stick, std::string const & topic)
 
 }
 
-std::string const & QMessageBase::topic() const {
+QByteArray const & QMessageBase::topic() const {
     return topic_;
 }

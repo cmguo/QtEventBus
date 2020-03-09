@@ -19,7 +19,8 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
     qeventbus.cpp \
     qmessage.cpp \
-    qmessagedata.cpp
+    qmessagedata.cpp \
+    qsubscriber.cpp
 
 HEADERS += \
     QtEventBus_global.h \
@@ -27,6 +28,7 @@ HEADERS += \
     qeventqueue.h \
     qmessage.h \
     qmessagedata.h \
+    qsubscriber.h \
     qtestmessage.h
 
 CONFIG(debug, debug|release) {

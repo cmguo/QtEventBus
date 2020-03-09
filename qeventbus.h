@@ -54,19 +54,23 @@ public:
 
 public:
     template<typename F>
-    void subscribe(std::string const & topic, F f, bool recv_stick = false) {
-        auto it = topics_.find(topic);
-        if (it != topics_.end()) {
-            it->second->subscribe(f, recv_stick);
-        }
+    void subscribe(QByteArray const & topic, F f, bool recv_stick = false) {
+        get(topic).subscribe(f, recv_stick);
     }
 
     template<typename F>
-    void unsubscribe(std::string const & topic, F f) {
-        auto it = topics_.find(topic);
-        if (it != topics_.end()) {
-            it->second->unsubscribe(f);
-        }
+    void unsubscribe(QByteArray const & topic, F f) {
+        get(topic).unsubscribe(f);
+    }
+
+    template<typename F>
+    void subscribe(QObject const * c, QByteArray const & topic, F f, bool recv_stick = false) {
+        get(topic).subscribe(c, f, recv_stick);
+    }
+
+    template<typename F>
+    void unsubscribe(QObject const * c, QByteArray const & topic, F f) {
+        get(topic).unsubscribe(c, f);
     }
 
 private:
@@ -83,13 +87,23 @@ private:
         return static_cast<QMessage<T> &>(*it->second);
     }
 
+    QMessageBase & get(QByteArray const & topic) {
+        auto it = topics_.find(topic);
+        if (it == topics_.end()) {
+            it = topics_.insert(std::make_pair(topic, new QSimpleMessage(topic))).first;
+        }
+        return *it->second;
+    }
+
 private:
     template<typename T>
     static void event_id() {}
 
     QEventQueue * queue_;
+    // messages with type (event_id)
     std::map<void(*)(), QMessageBase *> messages_;
-    std::map<std::string, QMessageBase *> topics_;
+    // messages with external topic or without type
+    std::map<QByteArray, QMessageBase *> topics_;
 };
 
 #endif // QEVENTBUS_H
