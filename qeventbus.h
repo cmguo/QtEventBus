@@ -73,6 +73,8 @@ public:
         get(topic).unsubscribe(c, f);
     }
 
+    void publish(QByteArray const & topic, QVariant const & msg = QVariant());
+
 private:
     template<typename T>
     QMessage<T> & get() {
@@ -87,13 +89,7 @@ private:
         return static_cast<QMessage<T> &>(*it->second);
     }
 
-    QMessageBase & get(QByteArray const & topic) {
-        auto it = topics_.find(topic);
-        if (it == topics_.end()) {
-            it = topics_.insert(std::make_pair(topic, new QSimpleMessage(topic))).first;
-        }
-        return *it->second;
-    }
+    QMessageBase & get(QByteArray const & topic);
 
 private:
     template<typename T>
