@@ -35,6 +35,14 @@ CONFIG(debug, debug|release) {
     win32: TARGET = $$join(TARGET,,,d)
 }
 
+msvc:CONFIG(release, debug|release) {
+    QMAKE_CXXFLAGS+=/Zi
+    QMAKE_LFLAGS+= /INCREMENTAL:NO /Debug
+    target2.files = $$OUT_PWD/release/QtEventBus.pdb
+    target2.path = $$[QT_INSTALL_LIBS]
+    INSTALLS += target2
+}
+
 includes.files = $$PWD/*.h $$PWD/*.hpp
 win32 {
     includes.path = $$[QT_INSTALL_HEADERS]/QtEventBus
