@@ -2,9 +2,16 @@
 
 #include "qexport.h"
 
+#include <qcomponentcontainer.h>
+
 static QExport<QEventBus> export_eventbus(QPart::shared);
 
 Q_DECLARE_METATYPE(QMessageData)
+
+QEventBus &QEventBus::globalInstance()
+{
+    return *QComponentContainer::globalInstance().get_export_value<QEventBus>();
+}
 
 QEventBus::QEventBus()
 {
