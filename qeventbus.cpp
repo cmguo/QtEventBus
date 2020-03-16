@@ -2,7 +2,7 @@
 
 #include "qexport.h"
 
-static QExport<QEventBus> export_eventbus;
+static QExport<QEventBus> export_eventbus(QPart::shared);
 
 Q_DECLARE_METATYPE(QMessageData)
 
