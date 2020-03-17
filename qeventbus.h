@@ -17,7 +17,7 @@ public:
     static QEventBus & globalInstance();
 
 public:
-    QEventBus();
+    Q_INVOKABLE QEventBus();
 
 public:
     template<typename T, typename F>
