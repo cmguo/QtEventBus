@@ -5,6 +5,8 @@ DEFINES += QTEVENTBUS_LIBRARY
 
 CONFIG += c++14
 
+include(../config.pri)
+
 # The following define makes your compiler emit warnings if you use
 # any Qt feature that has been marked deprecated (the exact warnings
 # depend on your compiler). Please consult the documentation of the
@@ -32,18 +34,6 @@ HEADERS += \
     qproperty.h \
     qsubscriber.h \
     qtestmessage.h
-
-CONFIG(debug, debug|release) {
-    win32: TARGET = $$join(TARGET,,,d)
-}
-
-msvc:CONFIG(release, debug|release) {
-    QMAKE_CXXFLAGS+=/Zi
-    QMAKE_LFLAGS+= /INCREMENTAL:NO /Debug
-    target2.files = $$OUT_PWD/release/QtEventBus.pdb
-    target2.path = $$[QT_INSTALL_LIBS]
-    INSTALLS += target2
-}
 
 includes.files = $$PWD/*.h $$PWD/*.hpp
 win32 {
