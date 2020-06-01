@@ -10,7 +10,7 @@ Q_DECLARE_METATYPE(QMessageData)
 
 QEventBus &QEventBus::globalInstance()
 {
-    return *QComponentContainer::globalInstance().get_export_value<QEventBus>();
+    return *QComponentContainer::globalInstance().getExportValue<QEventBus>();
 }
 
 QEventBus::QEventBus()
