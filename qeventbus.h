@@ -16,6 +16,8 @@ class QTEVENTBUS_EXPORT QEventBus : QObject
 public:
     static QEventBus & globalInstance();
 
+    static void init();
+
 public:
     Q_INVOKABLE QEventBus();
 

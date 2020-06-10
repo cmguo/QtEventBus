@@ -1,8 +1,11 @@
 #include "qeventbus.h"
 
+#include "qeventbusqml.h"
 #include "qexport.h"
 
 #include <qcomponentcontainer.h>
+#include <QQmlEngine>
+
 
 static QExport<QEventBus> export_eventbus(QPart::shared);
 
@@ -11,6 +14,23 @@ Q_DECLARE_METATYPE(QMessageData)
 QEventBus &QEventBus::globalInstance()
 {
     return *QComponentContainer::globalInstance().getExportValue<QEventBus>();
+}
+
+void QEventBus::init()
+{
+    static bool initialized = false;
+    if (initialized) {
+        return;
+    }
+
+    qmlRegisterSingletonType<QEventBusQml>("QEventBus", 1, 0, "QEventBus", [](QQmlEngine *engine, QJSEngine *scriptEngine) -> QObject* {
+        Q_UNUSED(engine)
+        Q_UNUSED(scriptEngine)
+        QEventBusQml *obj = new QEventBusQml();
+        return obj;
+    });
+
+    initialized = true;
 }
 
 QEventBus::QEventBus()

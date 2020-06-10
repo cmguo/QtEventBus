@@ -1,4 +1,5 @@
 QT -= gui
+QT += quick
 
 TEMPLATE = lib
 DEFINES += QTEVENTBUS_LIBRARY
@@ -20,6 +21,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
     qeventbus.cpp \
+    qeventbusqml.cpp \
     qmessage.cpp \
     qmessagedata.cpp \
     qproperty.cpp \
@@ -28,6 +30,7 @@ SOURCES += \
 HEADERS += \
     QtEventBus_global.h \
     qeventbus.h \
+    qeventbusqml.h \
     qeventqueue.h \
     qmessage.h \
     qmessagedata.h \
