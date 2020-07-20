@@ -9,7 +9,7 @@
 #include <vector>
 #include <map>
 
-class QTEVENTBUS_EXPORT QEventBus : QObject
+class QTEVENTBUS_EXPORT QEventBus : public QObject
 {
     Q_OBJECT
 
