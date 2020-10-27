@@ -24,15 +24,17 @@ public:
 public:
     template<typename T, typename F>
     void subscribe(F f, bool recv_stick = false) {
-        if (get<T>().subscribe(f, recv_stick)) {
+        QMessage<T> & msg = get<T>();
+        if (msg.subscribe(f, recv_stick) && !msg.topic().isEmpty()) {
             for (QEventQueue * q : queues_)
-                q->subscribe(get<T>().topic());
+                q->subscribe(msg.topic());
         }
     }
 
     template<typename T, typename F>
     void unsubscribe(F f) {
-        if (get<T>().unsubscribe(f)) {
+        QMessage<T> & msg = get<T>();
+        if (get<T>().unsubscribe(f) && !msg.topic().isEmpty()) {
             for (QEventQueue * q : queues_)
                 q->unsubscribe(get<T>().topic());
         }
@@ -40,25 +42,28 @@ public:
 
     template<typename T, typename F>
     void subscribe(QObject const * o, F f, bool recv_stick = false) {
-        if (get<T>().subscribe(o, f, recv_stick)) {
+        QMessage<T> & msg = get<T>();
+        if (msg.subscribe(o, f, recv_stick)) {
             for (QEventQueue * q : queues_)
-                q->subscribe(get<T>().topic());
+                q->subscribe(msg.topic());
         }
     }
 
     template<typename T, typename F>
     void unsubscribe(QObject const * o, F f) {
-        if (get<T>().unsubscribe(o, f)) {
+        QMessageBase & msg = get<T>();
+        if (msg.unsubscribe(o, f)) {
             for (QEventQueue * q : queues_)
-                q->unsubscribe(get<T>().topic());
+                q->unsubscribe(msg.topic());
         }
     }
 
     template<typename T>
     void unsubscribe(QObject const * o) {
-        if (get<T>().unsubscribe(o)) {
+        QMessage<T> & msg = get<T>();
+        if (msg.unsubscribe(o)) {
             for (QEventQueue * q : queues_)
-                q->unsubscribe(get<T>().topic());
+                q->unsubscribe(msg.topic());
         }
     }
 
@@ -67,6 +72,7 @@ public:
         get<T>().publish(msg);
     }
 
+    // from queue
     template<typename T>
     void publish(QEventQueue * queue, T const & msg) {
         get<T>().publish(queue, msg);
@@ -75,26 +81,39 @@ public:
 public:
     template<typename F>
     void subscribe(QByteArray const & topic, F f, bool recv_stick = false) {
-        get(topic).subscribe(f, recv_stick);
+        if (get(topic).subscribe(f, recv_stick)) {
+            for (QEventQueue * q : queues_)
+                q->subscribe(topic);
+        }
     }
 
     template<typename F>
     void unsubscribe(QByteArray const & topic, F f) {
-        get(topic).unsubscribe(f);
+        if (get(topic).unsubscribe(f)) {
+            for (QEventQueue * q : queues_)
+                q->unsubscribe(topic);
+        }
     }
 
     template<typename F>
     void subscribe(QObject const * c, QByteArray const & topic, F f, bool recv_stick = false) {
-        get(topic).subscribe(c, f, recv_stick);
+        if (get(topic).subscribe(c, f, recv_stick)) {
+            for (QEventQueue * q : queues_)
+                q->subscribe(topic);
+        }
     }
 
     template<typename F>
     void unsubscribe(QObject const * c, QByteArray const & topic, F f) {
-        get(topic).unsubscribe(c, f);
+        if (get(topic).unsubscribe(c, f)) {
+            for (QEventQueue * q : queues_)
+                q->unsubscribe(topic);
+        }
     }
 
     void publish(QByteArray const & topic, QVariant const & msg = QVariant());
 
+    // from queue
     void publish(QEventQueue * queue, QByteArray const & topic, QVariant const & msg = QVariant());
 
 private slots:

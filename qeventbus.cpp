@@ -53,6 +53,7 @@ void QEventBus::onMessage(const QByteArray &topic, const QVariant &msg)
 void QEventBus::publish(const QByteArray &topic, const QVariant &msg)
 {
     get(topic).publish(msg);
+    // TODO: also publish to queues
 }
 
 void QEventBus::publish(QEventQueue *queue, const QByteArray &topic, const QVariant &msg)
