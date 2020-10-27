@@ -24,37 +24,52 @@ public:
 public:
     template<typename T, typename F>
     void subscribe(F f, bool recv_stick = false) {
-        if (get<T>().subscribe(f, recv_stick) && queue_)
-            queue_->subscribe(get<T>().topic());
+        if (get<T>().subscribe(f, recv_stick)) {
+            for (QEventQueue * q : queues_)
+                q->subscribe(get<T>().topic());
+        }
     }
 
     template<typename T, typename F>
     void unsubscribe(F f) {
-        if (get<T>().unsubscribe(f) && queue_)
-            queue_->unsubscribe(get<T>().topic());
+        if (get<T>().unsubscribe(f)) {
+            for (QEventQueue * q : queues_)
+                q->unsubscribe(get<T>().topic());
+        }
     }
 
     template<typename T, typename F>
     void subscribe(QObject const * o, F f, bool recv_stick = false) {
-        if (get<T>().subscribe(o, f, recv_stick) && queue_)
-            queue_->subscribe(get<T>().topic());
+        if (get<T>().subscribe(o, f, recv_stick)) {
+            for (QEventQueue * q : queues_)
+                q->subscribe(get<T>().topic());
+        }
     }
 
     template<typename T, typename F>
     void unsubscribe(QObject const * o, F f) {
-        if (get<T>().unsubscribe(o, f) && queue_)
-            queue_->unsubscribe(get<T>().topic());
+        if (get<T>().unsubscribe(o, f)) {
+            for (QEventQueue * q : queues_)
+                q->unsubscribe(get<T>().topic());
+        }
     }
 
     template<typename T>
     void unsubscribe(QObject const * o) {
-        if (get<T>().unsubscribe(o) && queue_)
-            queue_->unsubscribe(get<T>().topic());
+        if (get<T>().unsubscribe(o)) {
+            for (QEventQueue * q : queues_)
+                q->unsubscribe(get<T>().topic());
+        }
     }
 
     template<typename T>
     void publish(T const & msg) {
         get<T>().publish(msg);
+    }
+
+    template<typename T>
+    void publish(QEventQueue * queue, T const & msg) {
+        get<T>().publish(queue, msg);
     }
 
 public:
@@ -80,7 +95,14 @@ public:
 
     void publish(QByteArray const & topic, QVariant const & msg = QVariant());
 
+    void publish(QEventQueue * queue, QByteArray const & topic, QVariant const & msg = QVariant());
+
+private slots:
+    void onComposition();
+
 private:
+    void onMessage(QByteArray const & topic, QVariant const & msg);
+
     template<typename T>
     QMessage<T> & get() {
         void(*id)() = &event_id<T>;
@@ -100,7 +122,7 @@ private:
     template<typename T>
     static void event_id() {}
 
-    QEventQueue * queue_;
+    QList<QEventQueue *> queues_;
     // messages with type (event_id)
     std::map<void(*)(), QMessageBase *> messages_;
     // messages with external topic or without type

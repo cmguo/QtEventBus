@@ -4,14 +4,18 @@
 #include <QObject>
 #include <string>
 
-class QEventQueue : QObject
+class QEventQueue : public QObject
 {
+    Q_OBJECT
 public:
-    virtual void subscribe(std::string const & topic) = 0;
+    virtual void subscribe(QByteArray const & topic) = 0;
 
-    virtual void unsubscribe(std::string const & topic) = 0;
+    virtual void unsubscribe(QByteArray const & topic) = 0;
 
-    virtual void publish(std::string const & topic, std::string const & msg) = 0;
+    virtual void publish(QByteArray const & topic, QByteArray const & msg) = 0;
+
+signals:
+    void onMessage(QByteArray const & topic, QVariant const & msg);
 };
 
 #endif // QMESSAGEPUSH_H

@@ -12,6 +12,8 @@
 
 #include <functional>
 
+class QEventQueue;
+
 class QTEVENTBUS_EXPORT QMessageBase : public QObject
 {
     Q_OBJECT
@@ -21,6 +23,8 @@ public:
 
 public:
     QByteArray const & topic() const;
+
+    QEventQueue * queue() const;
 
 signals:
     void on_message(QMessageData const & msg);
@@ -44,12 +48,15 @@ public:
 
     virtual void unsubscribe(QObject const * c, observ_t o) = 0;
 
-    virtual void publish(QVariant const & msg) = 0;
+    virtual void publish(QVariant const & msg);
+
+    virtual void publish(QEventQueue * queue, QVariant const & msg) = 0;
 
 protected:
     bool external_;
     bool stick_;
     QByteArray const topic_;
+    QEventQueue * queue_;
 };
 
 class QSimpleMessage : public QMessageBase
@@ -79,8 +86,9 @@ public:
         (void)o;
     }
 
-    virtual void publish(QVariant const & msg)
+    virtual void publish(QEventQueue * queue, QVariant const & msg)
     {
+        queue_ = queue;
         last_ = msg;
         emit on_message(msg);
     }

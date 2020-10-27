@@ -38,9 +38,26 @@ QEventBus::QEventBus()
     qRegisterMetaType<QMessageData>();
 }
 
+void QEventBus::onComposition()
+{
+    for (QEventQueue * q : queues_) {
+        connect(q, &QEventQueue::onMessage, this, &QEventBus::onMessage);
+    }
+}
+
+void QEventBus::onMessage(const QByteArray &topic, const QVariant &msg)
+{
+    publish(qobject_cast<QEventQueue*>(sender()), topic, msg);
+}
+
 void QEventBus::publish(const QByteArray &topic, const QVariant &msg)
 {
     get(topic).publish(msg);
+}
+
+void QEventBus::publish(QEventQueue *queue, const QByteArray &topic, const QVariant &msg)
+{
+    get(topic).publish(queue, msg);
 }
 
 QMessageBase &QEventBus::get(const QByteArray &topic)
