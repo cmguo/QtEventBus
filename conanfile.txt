@@ -1,0 +1,9 @@
+[requires]
+QtComposition/master@cmguo/stable
+
+
+[generators]
+qmake
+cmake
+
+[options]

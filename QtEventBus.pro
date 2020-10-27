@@ -6,8 +6,6 @@ DEFINES += QTEVENTBUS_LIBRARY
 
 CONFIG += c++14
 
-include(../config.pri)
-
 # The following define makes your compiler emit warnings if you use
 # any Qt feature that has been marked deprecated (the exact warnings
 # depend on your compiler). Please consult the documentation of the
@@ -51,9 +49,15 @@ unix {
 }
 !isEmpty(target.path): INSTALLS += target
 
-win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../QtComposition/release/ -lQtComposition
-else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../QtComposition/debug/ -lQtCompositiond
-else:unix: LIBS += -L$$OUT_PWD/../QtComposition/ -lQtComposition
+include($$(applyConanPlugin))
 
-INCLUDEPATH += $$PWD/../QtComposition
-DEPENDPATH += $$PWD/../QtComposition
+QMAKE_CXXFLAGS += /utf-8
+
+CONFIG(debug, debug|release) {
+    TARGET = $$join(TARGET,,,d)
+}
+
+CONFIG(release, debug|release) {
+    QMAKE_CXXFLAGS+=/Zi
+    QMAKE_LFLAGS+= /INCREMENTAL:NO /Debug
+}
