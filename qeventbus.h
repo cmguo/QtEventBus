@@ -25,7 +25,7 @@ public:
     template<typename T, typename F>
     void subscribe(F f, bool recv_stick = false) {
         QMessage<T> & msg = get<T>();
-        if (msg.subscribe(f, recv_stick) && !msg.topic().isEmpty()) {
+        if (msg.subscribe(f, recv_stick)) {
             for (QEventQueue * q : queues_)
                 q->subscribe(msg.topic());
         }
@@ -34,7 +34,7 @@ public:
     template<typename T, typename F>
     void unsubscribe(F f) {
         QMessage<T> & msg = get<T>();
-        if (get<T>().unsubscribe(f) && !msg.topic().isEmpty()) {
+        if (get<T>().unsubscribe(f)) {
             for (QEventQueue * q : queues_)
                 q->unsubscribe(get<T>().topic());
         }
