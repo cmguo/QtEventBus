@@ -21,7 +21,6 @@ SOURCES += \
     qeventbus.cpp \
     qeventbusqml.cpp \
     qmessage.cpp \
-    qmessagedata.cpp \
     qproperty.cpp \
     qsubscriber.cpp
 
@@ -31,7 +30,7 @@ HEADERS += \
     qeventbusqml.h \
     qeventqueue.h \
     qmessage.h \
-    qmessagedata.h \
+    qmessageresult.h \
     qproperty.h \
     qsubscriber.h \
     qtestmessage.h

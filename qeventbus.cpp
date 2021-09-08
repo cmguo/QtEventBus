@@ -9,7 +9,7 @@
 
 static QExport<QEventBus> export_eventbus(QPart::shared);
 
-Q_DECLARE_METATYPE(QMessageData)
+Q_DECLARE_METATYPE(QMessageResultPointer)
 
 QEventBus &QEventBus::globalInstance()
 {
@@ -35,7 +35,7 @@ void QEventBus::init()
 
 QEventBus::QEventBus()
 {
-    qRegisterMetaType<QMessageData>();
+    qRegisterMetaType<QMessageResultPointer>();
 }
 
 void QEventBus::onComposition()
@@ -50,15 +50,15 @@ void QEventBus::onMessage(const QByteArray &topic, const QVariant &msg)
     publish(qobject_cast<QEventQueue*>(sender()), topic, msg);
 }
 
-void QEventBus::publish(const QByteArray &topic, const QVariant &msg)
+QtPromise::QPromise<QVector<QVariant>> QEventBus::publish(const QByteArray &topic, const QVariant &msg)
 {
-    get(topic).publish(msg);
+    return get(topic).publish(msg);
     // TODO: also publish to queues
 }
 
-void QEventBus::publish(QEventQueue *queue, const QByteArray &topic, const QVariant &msg)
+QtPromise::QPromise<QVector<QVariant>> QEventBus::publish(QEventQueue *queue, const QByteArray &topic, const QVariant &msg)
 {
-    get(topic).publish(queue, msg);
+    return get(topic).publish(queue, msg);
 }
 
 QMessageBase &QEventBus::get(const QByteArray &topic)

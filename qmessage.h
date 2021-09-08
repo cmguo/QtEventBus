@@ -2,7 +2,7 @@
 #define QMESSAGE_H
 
 #include "QtEventBus_global.h"
-#include "qmessagedata.h"
+#include "qmessageresult.h"
 
 #include <QObject>
 #include <QThread>
@@ -27,13 +27,13 @@ public:
     QEventQueue * queue() const;
 
 signals:
-    void on_message(QMessageData const & msg);
+    void on_message(QMessageResultPointer data);
 
-    void on_stick_message(QMessageData const & msg);
+    void on_stick_message(QMessageResultPointer data);
 
 public:
     /* stringlize */
-    typedef std::function<void(QByteArray const &, QVariant const &)> observ_t;
+    typedef std::function<QVariant (QByteArray const &, QVariant const &)> observ_t;
 
     bool subscribe(observ_t o, bool recv_stick) {
         return subscribe(this, o, recv_stick);
@@ -50,9 +50,9 @@ public:
 
     virtual bool unsubscribe(QObject const * c) = 0;
 
-    virtual void publish(QVariant const & msg);
+    virtual QtPromise::QPromise<QVector<QVariant>> publish(QVariant const & msg);
 
-    virtual void publish(QEventQueue * queue, QVariant const & msg) = 0;
+    virtual QtPromise::QPromise<QVector<QVariant>> publish(QEventQueue * queue, QVariant const & msg) = 0;
 
 protected:
     bool external_;
@@ -69,71 +69,24 @@ public:
     {
     }
 
-    virtual bool subscribe(QObject const * c, observ_t o, bool recv_stick)
-    {
-        QObject::connect(this, &QMessageBase::on_message, c,
-                         [this, o](QMessageData const & e){o(topic_, e.get<QVariant>());});
-        if (last_.isValid() && recv_stick) {
-            // send stick message on specific context
-            auto cn = QObject::connect(this, &QMessageBase::on_stick_message, c,
-                             [this, o](QMessageData const & e){o(topic_, e.get<QVariant>());});
-            emit on_stick_message(last_);
-            disconnect(c, SIGNAL(on_stick_message(QMessageData)));
-        }
-        return external_ && !topic_.isEmpty()
-                && receivers(SIGNAL(on_message(QMessageData))) == 1;
-    }
+    virtual bool subscribe(QObject const * c, observ_t o, bool recv_stick);
 
-    virtual bool unsubscribe(QObject const * c, observ_t o)
-    {
-        (void)c;
-        (void)o;
-        return false;
-    }
+    virtual bool unsubscribe(QObject const * c, observ_t o);
 
-    virtual bool unsubscribe(QObject const * c)
-    {
-        if (c) disconnect(c);
-        return external_ && !topic_.isEmpty()
-                && receivers(SIGNAL(on_message(QMessageData))) == 0;
-    }
+    virtual bool unsubscribe(QObject const * c);
 
     // from queue
-    virtual void publish(QEventQueue * queue, QVariant const & msg)
-    {
-        queue_ = queue;
-        last_ = msg;
-        emit on_message(msg);
-    }
+    virtual QtPromise::QPromise<QVector<QVariant>> publish(QEventQueue * queue, QVariant const & msg);
 
 private:
     QVariant last_;
 };
 
-template<typename T>
-class QMessageMeta
-{
-public:
-    static constexpr bool external = false;
-    static constexpr bool stick = false;
-    static constexpr char const * topic = nullptr;
-};
-
-// register properties of this message type
-
-#define Q_MESSAGE_META(ty, et, sk, tp) \
-    template<> \
-    class QMessageMeta<ty> \
-    { \
-    public: \
-        static constexpr bool external = et; \
-        static constexpr bool stick = sk; \
-        static constexpr char const * topic = tp; \
-    };
 
 template<typename T>
 class QMessage : public QMessageBase
 {
+    typedef typename QMessageMeta<T>::result R;
 public:
     QMessage()
         : QMessageBase(QMessageMeta<T>::external, QMessageMeta<T>::stick,
@@ -163,16 +116,16 @@ public:
     template<typename F>
     bool subscribe(QObject const * c, F f, bool recv_stick) {
         QObject::connect(this, &QMessageBase::on_message, c,
-                         [f](QMessageData const & e){f(e.get<T>());});
+                         [f](QMessageResultPointer const & e){e.invoke<T, R>(f);});
         if (last_ && recv_stick) {
             // send stick message on specific context
             auto cn = QObject::connect(this, &QMessageBase::on_stick_message, c,
-                             [f](QMessageData const & e){f(e.get<T>());});
+                             [f](QMessageResultPointer const & e){e.invoke2<T, R>(f);});
             emit on_stick_message(*last_);
-            disconnect(c, SIGNAL(on_stick_message(QMessageData)));
+            disconnect(c, SIGNAL(on_stick_message(QMessageResultPointer)));
         }
         return external_ && !topic_.isEmpty()
-                && receivers(SIGNAL(on_message(QMessageData))) == 1;
+                && receivers(SIGNAL(on_message(QMessageResultPointer))) == 1;
     }
 
     // remove receiver f on context o
@@ -187,15 +140,15 @@ public:
     virtual bool unsubscribe(QObject const * c) override {
         QObject::disconnect(this, &QMessageBase::on_message, c, 0);
         return external_ && !topic_.isEmpty()
-                && receivers(SIGNAL(on_message(QMessageData))) == 0;
+                && receivers(SIGNAL(on_message(QMessageResultPointer))) == 0;
     }
 
-    void publish(T const & msg) {
-        publish(nullptr, msg);
+    QtPromise::QPromise<QVector<R>> publish(T const & msg) {
+        return publish(nullptr, msg);
     }
 
     // publish msg, and may save for stick
-    void publish(QEventQueue * queue, T const & msg) {
+    QtPromise::QPromise<QVector<R>> publish(QEventQueue * queue, T const & msg) {
         if (stick_) {
             if (last_)
                 last_->~T();
@@ -204,54 +157,67 @@ public:
             new (last_) T(msg);
         }
         queue_ = queue;
-        emit on_message(QMessageData(msg));
+        int n = receivers(SIGNAL(on_message(QMessageResultPointer)));
+        if (n == 0)
+            return QtPromise::QPromise<QVector<R>>::resolve({});
+        QMessageResultPointer data(msg);
+        auto pm = data.await<T, R>(n);
+        emit on_message(std::move(data));
+        return pm;
     }
 
 public:
     /* stringlize */
 
     virtual bool subscribe(QObject const * c, observ_t o, bool recv_stick) {
-        return subscribe(c, [=](auto m) { o(topic_, toVar(m)); }, recv_stick);
+        return subscribe(c, [=](auto & m) { return fromVarR(o(topic_, toVar(m))); }, recv_stick);
     }
 
     virtual bool unsubscribe(QObject const * c, observ_t o) {
+        (void)c;
         (void)o;
-        return unsubscribe(c, [=](auto m) {o(topic_, toVar(m)); });
+        return false;
     }
 
-    virtual void publish(QEventQueue * queue, QVariant const & msg) {
-        publish(queue, fromVar(msg));
+    virtual QtPromise::QPromise<QVector<QVariant>> publish(QEventQueue * queue, QVariant const & msg) {
+        return publish(queue, fromVar(msg)).map([](R const & r, int) { return toVarR(r); });
     }
 
     template<typename F>
     bool subscribe2(F f, bool recv_stick) {
-        return subscribe(this, [=](auto m) { f(topic_, toVar(m)); }, recv_stick);
+        return subscribe(this, [=](auto & m) { return f(topic_, toVar(m)); }, recv_stick);
     }
 
     template<typename F>
     bool unsubscribe2(F f) {
-        return unsubscribe(this, [=](auto m) { f(topic_, toVar(m)); });
+        return unsubscribe(this, [=](auto & m) { return f(topic_, toVar(m)); });
     }
 
     template<typename F>
     bool subscribe2(QObject const * c, F f, bool recv_stick) {
-        return subscribe(c, [=](auto m) { f(topic_, toVar(m)); }, recv_stick);
+        return subscribe(c, [=](auto & m) { return f(topic_, toVar(m)); }, recv_stick);
     }
 
     template<typename F>
     bool unsubscribe2(QObject const * c, F f) {
-        return unsubscribe(c, [=](auto m) { f(topic_, toVar(m)); });
+        return unsubscribe(c, [=](auto & m) { return f(topic_, toVar(m)); });
     }
 
 private:
-    QVariant toVar(T const & msg) {
-        (void)msg;
-        return QVariant();
+    static QVariant toVar(T const & msg) {
+        return QVariant::fromValue(msg);
     }
 
-    T fromVar(QVariant const & msg) {
-        (void)msg;
-        return T();
+    static T fromVar(QVariant const & msg) {
+        return msg.value<T>();
+    }
+
+    static QVariant toVarR(R const & result) {
+        return QVariant::fromValue(result);
+    }
+
+    static R fromVarR(QVariant result) {
+        return result.value<R>();
     }
 
 private:

@@ -68,14 +68,16 @@ public:
     }
 
     template<typename T>
-    void publish(T const & msg) {
-        get<T>().publish(msg);
+    QtPromise::QPromise<QVector<typename QMessageMeta<T>::result>>
+    publish(T const & msg) {
+        return get<T>().publish(msg);
     }
 
     // from queue
     template<typename T>
-    void publish(QEventQueue * queue, T const & msg) {
-        get<T>().publish(queue, msg);
+    QtPromise::QPromise<QVector<typename QMessageMeta<T>::result>>
+    publish(QEventQueue * queue, T const & msg) {
+        return get<T>().publish(queue, msg);
     }
 
 public:
@@ -111,10 +113,10 @@ public:
         }
     }
 
-    void publish(QByteArray const & topic, QVariant const & msg = QVariant());
+    QtPromise::QPromise<QVector<QVariant>> publish(QByteArray const & topic, QVariant const & msg = QVariant());
 
     // from queue
-    void publish(QEventQueue * queue, QByteArray const & topic, QVariant const & msg = QVariant());
+    QtPromise::QPromise<QVector<QVariant>> publish(QEventQueue * queue, QByteArray const & topic, QVariant const & msg = QVariant());
 
 private slots:
     void onComposition();
@@ -129,7 +131,7 @@ private:
         if (it == messages_.end()) {
             QMessage<T> * msg = new QMessage<T>();
             it = messages_.insert(std::make_pair(id, msg)).first;
-            if (!msg->topic().empty())
+            if (!msg->topic().isEmpty())
                 topics_.insert(std::make_pair(msg->topic(), msg));
         }
         return static_cast<QMessage<T> &>(*it->second);

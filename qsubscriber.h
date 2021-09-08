@@ -19,7 +19,7 @@ public:
     QSubscriber(typename QtPrivate::FunctionPointer<Func>::Object *receiver, Func func)
     {
         observ_ = [receiver, func](QByteArray const &, QVariant const & msg) {
-            QSubscriber::invoke(receiver, func, msg);
+            return QSubscriber::invoke(receiver, func, msg);
         };
     }
 
@@ -27,13 +27,13 @@ public:
     static void test();
 
 public:
-    void operator()(QByteArray const & topic, QVariant const & msg);
+    QVariant operator()(QByteArray const & topic, QVariant const & msg);
 
 private:
-    static void invoke(QObject * receiver, QByteArray const & target, QVariant args);
+    static QVariant invoke(QObject * receiver, QByteArray const & target, QVariant args);
 
     template <typename Func>
-    static void invoke(typename QtPrivate::FunctionPointer<Func>::Object * receiver, Func func, QVariant args)
+    static QVariant invoke(typename QtPrivate::FunctionPointer<Func>::Object * receiver, Func func, QVariant args)
     {
         typedef QtPrivate::FunctionPointer<Func> FuncType;
         QVariantList list;
@@ -50,7 +50,8 @@ private:
         vec.append(ret.data());
         for (QVariant & l : list)
             vec.append(l.data());
-        FuncType::template call<typename FuncType::Arguments, void>(func, receiver, vec.data());
+        FuncType::template call<typename FuncType::Arguments, QVariant>(func, receiver, vec.data());
+        return ret;
     }
 
     template<typename U, typename Arg, typename ...Args>
