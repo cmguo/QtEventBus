@@ -63,13 +63,20 @@ struct TestMessage
     int j;
 };
 
-
-
 Q_MESSAGE_META_RESULT(TestMessage, false, false, "test", int)
+
+struct VoidMessage
+{
+    int i;
+    int j;
+};
+
+Q_MESSAGE_META(VoidMessage, false, false, "void")
 
 void QSubscriber::test()
 {
     QEventBus bus;
+    // SimpleMessage
     TestReceiver receiver;
     bus.subscribe("test_topic", QSubscriber(&receiver, &TestReceiver::test));
     bus.publish("test_topic", QStringList({"1", "2"})).then([](QVector<QVariant> const & result) {
@@ -77,6 +84,7 @@ void QSubscriber::test()
     }, [](std::exception & e) {
         qDebug() << e.what();
     });
+    // TestMessage (test)
     QMetaType::registerConverter<TestMessage, QVariantList>([](auto & m) {
         return QVariantList{m.i, m.j};
     });
@@ -84,8 +92,9 @@ void QSubscriber::test()
         return TestMessage{l[0].toInt(), l[1].toInt()};
     });
     bus.subscribe<TestMessage>([] (auto msg) {
-        return msg.i + msg.j;
+        return QtPromise::resolve(msg.i + msg.j);
     });
+    bus.subscribe("test", QSubscriber(&receiver, &TestReceiver::test));
     bus.publish(TestMessage{1, 2}).then([](QVector<int> const & result) {
         qDebug() << "TestMessage" << result;
     }, [](std::exception & e) {
@@ -96,6 +105,27 @@ void QSubscriber::test()
     }, [](std::exception & e) {
         qDebug() << e.what();
     });;
+    // VoidMessage (void)
+    QMetaType::registerConverter<VoidMessage, QVariantList>([](auto & m) {
+        return QVariantList{m.i, m.j};
+    });
+    QMetaType::registerConverter<QVariantList, VoidMessage>([](auto & l) {
+        return VoidMessage{l[0].toInt(), l[1].toInt()};
+    });
+    bus.subscribe<VoidMessage>([] (auto msg) {
+        return QtPromise::resolve();
+    });
+    bus.subscribe("void", QSubscriber(&receiver, &TestReceiver::test));
+    bus.publish(VoidMessage{1, 2}).then([]() {
+        qDebug() << "VoidMessage";
+    }, [](std::exception & e) {
+        qDebug() << e.what();
+    });
+    bus.publish("void", QVariantList{1, 2}).then([](QVector<QVariant> const & result) {
+        qDebug() << "VoidMessage variant" << result;
+    }, [](std::exception & e) {
+        qDebug() << e.what();
+    });
 }
 
 QVariant QSubscriber::operator()(const QByteArray &topic, const QVariant &msg)

@@ -78,6 +78,8 @@ public:
     // from queue
     virtual QtPromise::QPromise<QVector<QVariant>> publish(QEventQueue * queue, QVariant const & msg);
 
+    void mergeTo(QMessageBase * msg);
+
 private:
     QVariant last_;
 };
@@ -143,12 +145,12 @@ public:
                 && receivers(SIGNAL(on_message(QMessageResultPointer))) == 0;
     }
 
-    QtPromise::QPromise<QVector<R>> publish(T const & msg) {
+    QtPromise::QPromise<typename VectorResult<R>::type> publish(T const & msg) {
         return publish(nullptr, msg);
     }
 
     // publish msg, and may save for stick
-    QtPromise::QPromise<QVector<R>> publish(QEventQueue * queue, T const & msg) {
+    QtPromise::QPromise<typename VectorResult<R>::type> publish(QEventQueue * queue, T const & msg) {
         if (stick_) {
             if (last_)
                 last_->~T();
@@ -159,7 +161,7 @@ public:
         queue_ = queue;
         int n = receivers(SIGNAL(on_message(QMessageResultPointer)));
         if (n == 0)
-            return QtPromise::QPromise<QVector<R>>::resolve({});
+            return VectorResult<R>::empty();
         QMessageResultPointer data(msg);
         auto pm = data.await<T, R>(n);
         emit on_message(std::move(data));
@@ -170,7 +172,7 @@ public:
     /* stringlize */
 
     virtual bool subscribe(QObject const * c, observ_t o, bool recv_stick) {
-        return subscribe(c, [=](auto & m) { return fromVarR(o(topic_, toVar(m))); }, recv_stick);
+        return subscribe(c, [=](auto & m) { return VectorResult<R>::fromVar(o, topic_, toVar(m)); }, recv_stick);
     }
 
     virtual bool unsubscribe(QObject const * c, observ_t o) {
@@ -180,8 +182,10 @@ public:
     }
 
     virtual QtPromise::QPromise<QVector<QVariant>> publish(QEventQueue * queue, QVariant const & msg) {
-        return publish(queue, fromVar(msg)).map([](R const & r, int) { return toVarR(r); });
+        return VectorResult<R>::mapResult(publish(queue, fromVar(msg)));
     }
+
+    /* Need topic */
 
     template<typename F>
     bool subscribe2(F f, bool recv_stick) {
@@ -210,14 +214,6 @@ private:
 
     static T fromVar(QVariant const & msg) {
         return msg.value<T>();
-    }
-
-    static QVariant toVarR(R const & result) {
-        return QVariant::fromValue(result);
-    }
-
-    static R fromVarR(QVariant result) {
-        return result.value<R>();
     }
 
 private:

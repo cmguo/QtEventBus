@@ -68,14 +68,14 @@ public:
     }
 
     template<typename T>
-    QtPromise::QPromise<QVector<typename QMessageMeta<T>::result>>
+    QtPromise::QPromise<typename VectorResult<typename QMessageMeta<T>::result>::type>
     publish(T const & msg) {
         return get<T>().publish(msg);
     }
 
     // from queue
     template<typename T>
-    QtPromise::QPromise<QVector<typename QMessageMeta<T>::result>>
+    QtPromise::QPromise<typename VectorResult<typename QMessageMeta<T>::result>::type>
     publish(QEventQueue * queue, T const & msg) {
         return get<T>().publish(queue, msg);
     }
@@ -131,8 +131,15 @@ private:
         if (it == messages_.end()) {
             QMessage<T> * msg = new QMessage<T>();
             it = messages_.insert(std::make_pair(id, msg)).first;
-            if (!msg->topic().isEmpty())
-                topics_.insert(std::make_pair(msg->topic(), msg));
+            if (!msg->topic().isEmpty()) {
+                auto rt = topics_.insert(std::make_pair(msg->topic(), msg));
+                if (!rt.second) {
+                    QSimpleMessage * old = static_cast<QSimpleMessage*>(rt.first->second);
+                    old->mergeTo(msg);
+                    rt.first->second = msg;
+                    delete old;
+                }
+            }
         }
         return static_cast<QMessage<T> &>(*it->second);
     }

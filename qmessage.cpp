@@ -5,7 +5,6 @@ QMessageBase::QMessageBase(bool external, bool stick, QByteArray const & topic)
     , stick_(stick)
     , topic_(topic)
 {
-
 }
 
 QByteArray const & QMessageBase::topic() const
@@ -67,4 +66,10 @@ QtPromise::QPromise<QVector<QVariant> > QSimpleMessage::publish(QEventQueue *que
     auto pm = data.await<QVariant, QVariant>(n);
     emit on_message(data);
     return pm;
+}
+
+void QSimpleMessage::mergeTo(QMessageBase *msg)
+{
+    // TODO:
+    assert(false);
 }

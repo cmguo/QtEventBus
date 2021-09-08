@@ -32,23 +32,82 @@ public:
     };
 
 template<typename R>
+struct VectorResult
+{
+    typedef QVector<R> type;
+
+    static QVariant toVar(R const & result) {
+        return QVariant::fromValue(result);
+    }
+
+    template<typename F>
+    static R fromVar(F const & f, QByteArray const & t, QVariant const & v) {
+        QVariant r = f(t, v);
+        return r.value<R>();
+    }
+
+    static QtPromise::QPromise<QVector<QVariant>> mapResult(QtPromise::QPromise<QVector<R>> p) {
+        return p.map([](R const & r, int) { return toVar(r); });
+    }
+
+    static QtPromise::QPromise<QVector<R>> empty() {
+        return QtPromise::QPromise<QVector<R>>::resolve({});
+    }
+};
+
+template<>
+struct VectorResult<void>
+{
+    typedef void type;
+
+    template<typename F>
+    static void fromVar(F const & f, QByteArray const & t, QVariant const & v) {
+        f(t, v);
+    }
+
+    static QtPromise::QPromise<QVector<QVariant>> mapResult(QtPromise::QPromise<void> p) {
+        return p.then([] () { return QVector<QVariant>{}; });
+    }
+
+    static QtPromise::QPromise<void> empty() {
+        return QtPromise::QPromise<void>::resolve();
+    }
+};
+
+template<typename R>
 struct PromiseResolver {
     QtPromise::QPromiseResolve<R> const resolve;
     QtPromise::QPromiseReject<R> const reject;
 };
 
-template<typename R, typename T, typename F>
+template<typename R, typename T, typename F, typename RR = typename std::result_of<F(T &)>::type>
 struct QMessageResultResolve {
     static void invoke(PromiseResolver<R> const & rl, F const & f, T const & msg) {
         rl.resolve(f(msg));
     }
 };
 
-template<typename T, typename F>
-struct QMessageResultResolve<void, T, F> {
+template<typename R, typename T, typename F>
+struct QMessageResultResolve<R, T, F, QtPromise::QPromise<R>> {
+    static void invoke(PromiseResolver<R> const & rl, F const & f, T const & msg) {
+        f(msg).then([r = rl.resolve](R const & d) {
+            r(d);
+        }, rl.reject);
+    }
+};
+
+template<typename T, typename F, typename RR>
+struct QMessageResultResolve<void, T, F, RR> {
     static void invoke(PromiseResolver<void> const & rl, F const & f, T const & msg) {
         f(msg);
         rl.resolve();
+    }
+};
+
+template<typename T, typename F>
+struct QMessageResultResolve<void, T, F, QtPromise::QPromise<void>> {
+    static void invoke(PromiseResolver<void> const & rl, F const & f, T const & msg) {
+        f(msg).then(rl.resolve, rl.reject);
     }
 };
 
@@ -61,7 +120,7 @@ struct QMessageResult
 
     QMessageResult(T const msg) : msg(msg) {}
 
-    QtPromise::QPromise<QVector<R>> await(int n) {
+    QtPromise::QPromise<typename VectorResult<R>::type> await(int n) {
         QVector<QtPromise::QPromise<R>> promises;
         for (int i = 0; i < n; ++i) {
             promises.append(QtPromise::QPromise<R>([this] (auto const & resolve, auto const & reject) {
@@ -119,7 +178,7 @@ public:
 
 public:
     template<typename T, typename R>
-    QtPromise::QPromise<QVector<R>> await(int n) {
+    QtPromise::QPromise<typename VectorResult<R>::type> await(int n) {
         return static_cast<QMessageResultSharedData<T, R> &>(*pointer_).result_.await(n);
     }
 
