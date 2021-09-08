@@ -21,6 +21,8 @@ public:
 public:
     Q_INVOKABLE QEventBus();
 
+    QEventBus(QEventBus * parent);
+
 public:
     template<typename T, typename F>
     void subscribe(F f, bool recv_stick = false) {
@@ -81,33 +83,29 @@ public:
     }
 
 public:
-    template<typename F>
-    void subscribe(QByteArray const & topic, F f, bool recv_stick = false) {
-        if (get(topic).subscribe(f, recv_stick)) {
+    void subscribe(QByteArray const & topic, QMessageBase::observ_t const & o, bool recv_stick = false) {
+        if (get(topic).subscribe(o, recv_stick)) {
             for (QEventQueue * q : queues_)
                 q->subscribe(topic);
         }
     }
 
-    template<typename F>
-    void unsubscribe(QByteArray const & topic, F f) {
-        if (get(topic).unsubscribe(f)) {
+    void unsubscribe(QByteArray const & topic, QMessageBase::observ_t const & o) {
+        if (get(topic).unsubscribe(o)) {
             for (QEventQueue * q : queues_)
                 q->unsubscribe(topic);
         }
     }
 
-    template<typename F>
-    void subscribe(QObject const * c, QByteArray const & topic, F f, bool recv_stick = false) {
-        if (get(topic).subscribe(c, f, recv_stick)) {
+    void subscribe(QObject const * c, QByteArray const & topic, QMessageBase::observ_t const & o, bool recv_stick = false) {
+        if (get(topic).subscribe(c, o, recv_stick)) {
             for (QEventQueue * q : queues_)
                 q->subscribe(topic);
         }
     }
 
-    template<typename F>
-    void unsubscribe(QObject const * c, QByteArray const & topic, F f) {
-        if (get(topic).unsubscribe(c, f)) {
+    void unsubscribe(QObject const * c, QByteArray const & topic, QMessageBase::observ_t const & o = nullptr) {
+        if (get(topic).unsubscribe(c, o)) {
             for (QEventQueue * q : queues_)
                 q->unsubscribe(topic);
         }
@@ -126,11 +124,11 @@ private:
 
     template<typename T>
     QMessage<T> & get() {
-        void(*id)() = &event_id<T>;
-        auto it = messages_.find(id);
-        if (it == messages_.end()) {
-            QMessage<T> * msg = new QMessage<T>();
-            it = messages_.insert(std::make_pair(id, msg)).first;
+        QMessage<T> * msg = const_cast<QEventBus const *>(this)->get<T>();
+        if (msg == nullptr) {
+            msg = new QMessage<T>();
+            void(*id)() = &event_id<T>;
+            messages_.insert(std::make_pair(id, msg)).first;
             if (!msg->topic().isEmpty()) {
                 auto rt = topics_.insert(std::make_pair(msg->topic(), msg));
                 if (!rt.second) {
@@ -141,10 +139,27 @@ private:
                 }
             }
         }
-        return static_cast<QMessage<T> &>(*it->second);
+        return *msg;
+    }
+
+    template<typename T>
+    QMessage<T> * get() const {
+        void(*id)() = &event_id<T>;
+        auto it = messages_.find(id);
+        if (it == messages_.end()) {
+            QEventBus const * parent = qobject_cast<QEventBus *>(this->parent());
+            if (parent) {
+                return parent->get<T>();
+            } else {
+                return nullptr;
+            }
+        }
+        return static_cast<QMessage<T> *>(it->second);
     }
 
     QMessageBase & get(QByteArray const & topic);
+
+    QMessageBase * get(QByteArray const & topic) const;
 
 private:
     template<typename T>

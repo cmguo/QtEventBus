@@ -38,6 +38,11 @@ QEventBus::QEventBus()
     qRegisterMetaType<QMessageResultPointer>();
 }
 
+QEventBus::QEventBus(QEventBus *parent)
+    : QObject(parent)
+{
+}
+
 void QEventBus::onComposition()
 {
     for (QEventQueue * q : queues_) {
@@ -63,9 +68,23 @@ QtPromise::QPromise<QVector<QVariant>> QEventBus::publish(QEventQueue *queue, co
 
 QMessageBase &QEventBus::get(const QByteArray &topic)
 {
+    QMessageBase * msg = const_cast<QEventBus const *>(this)->get(topic);
+    if (msg == nullptr) {
+        msg = new QSimpleMessage(topic);
+        topics_.insert(std::make_pair(topic, msg));
+    }
+    return *msg;
+}
+
+QMessageBase * QEventBus::get(const QByteArray &topic) const
+{
     auto it = topics_.find(topic);
     if (it == topics_.end()) {
-       it = topics_.insert(std::make_pair(topic, new QSimpleMessage(topic))).first;
+        QEventBus const * parent = qobject_cast<QEventBus *>(this->parent());
+        if (parent) {
+            return parent->get(topic);
+        }
+        return nullptr;
     }
-    return *it->second;
+    return it->second;
 }

@@ -176,8 +176,10 @@ public:
     }
 
     virtual bool unsubscribe(QObject const * c, observ_t o) {
-        (void)c;
-        (void)o;
+        if (c != this && !o) {
+            disconnect(c);
+            return true;
+        }
         return false;
     }
 
