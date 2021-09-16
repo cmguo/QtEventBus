@@ -14,7 +14,7 @@ class ConanConfig(QtConanFile):
     version = package_version
 
     license = "Github"
-    author = "Skycoder42"
+    author = "cmguo"
 
     git_url = "git@github.com:cmguo/QtEventBus.git"
 
