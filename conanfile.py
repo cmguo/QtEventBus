@@ -18,7 +18,7 @@ class ConanConfig(QtConanFile):
 
     git_url = "git@github.com:cmguo/QtEventBus.git"
 
-    requires = "QtComposition/master@cmguo/stable"
+    requires = "QtComposition/master@cmguo/stable", "qtpromise/v0.5.0@cmguo/stable"
 
 
 if __name__ == '__main__':
