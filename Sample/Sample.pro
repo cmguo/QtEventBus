@@ -1,10 +1,7 @@
 QT -= gui
-QT += quick
 
-TEMPLATE = lib
-DEFINES += QTEVENTBUS_LIBRARY
-
-CONFIG += c++14
+CONFIG += c++14 console
+CONFIG -= app_bundle
 
 include($$(applyCommonConfig))
 include($$(applyConanPlugin))
@@ -23,31 +20,20 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
-    qeventbus.cpp \
-    qeventbusqml.cpp \
-    qmessage.cpp \
-    qproperty.cpp \
-    qsubscriber.cpp
+        main.cpp \
+        sample.cpp
 
 HEADERS += \
-    QtEventBus_global.h \
-    qeventbus.h \
-    qeventbusqml.h \
-    qeventqueue.h \
-    qmessage.h \
-    qmessageresult.h \
-    qproperty.h \
-    qsubscriber.h
-
-includes.files = $$PWD/*.h $$PWD/*.hpp
-win32 {
-    includes.path = $$[QT_INSTALL_HEADERS]/QtEventBus
-    target.path = $$[QT_INSTALL_LIBS]
-}
-INSTALLS += includes
+    qtestmessage.h
 
 # Default rules for deployment.
-unix {
-    target.path = /usr/lib
-}
+qnx: target.path = /tmp/$${TARGET}/bin
+else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
+
+win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../ -lQtEventBus
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../ -lQtEventBusd
+else:unix: LIBS += -L$$OUT_PWD/../ -lQtEventBus
+
+INCLUDEPATH += $$PWD/../
+DEPENDPATH += $$PWD/../
