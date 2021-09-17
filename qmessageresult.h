@@ -41,7 +41,13 @@ struct VectorResult
     }
 
     template<typename F>
-    static R fromVar(F const & f, QByteArray const & t, QVariant const & v) {
+    static QVariant toVar(F f, QByteArray const & t, QVariant const & v) {
+        R r = f(t, v);
+        return toVar(r);
+    }
+
+    template<typename F>
+    static R fromVar(F f, QByteArray const & t, QVariant const & v) {
         QVariant r = f(t, v);
         return r.value<R>();
     }
@@ -61,7 +67,13 @@ struct VectorResult<void>
     typedef void type;
 
     template<typename F>
-    static void fromVar(F const & f, QByteArray const & t, QVariant const & v) {
+    static QVariant toVar(F f, QByteArray const & t, QVariant const & v) {
+        f(t, v);
+        return QVariant();
+    }
+
+    template<typename F>
+    static void fromVar(F f, QByteArray const & t, QVariant const & v) {
         f(t, v);
     }
 
@@ -89,7 +101,7 @@ struct QMessageResultResolve {
 
 template<typename R, typename T, typename F>
 struct QMessageResultResolve<R, T, F, QtPromise::QPromise<R>> {
-    static void invoke(PromiseResolver<R> const & rl, F const & f, T const & msg) {
+    static void invoke(PromiseResolver<R> const & rl, F f, T const & msg) {
         f(msg).then([r = rl.resolve](R const & d) {
             r(d);
         }, rl.reject);
@@ -98,7 +110,7 @@ struct QMessageResultResolve<R, T, F, QtPromise::QPromise<R>> {
 
 template<typename T, typename F, typename RR>
 struct QMessageResultResolve<void, T, F, RR> {
-    static void invoke(PromiseResolver<void> const & rl, F const & f, T const & msg) {
+    static void invoke(PromiseResolver<void> const & rl, F f, T const & msg) {
         f(msg);
         rl.resolve();
     }
@@ -106,7 +118,7 @@ struct QMessageResultResolve<void, T, F, RR> {
 
 template<typename T, typename F>
 struct QMessageResultResolve<void, T, F, QtPromise::QPromise<void>> {
-    static void invoke(PromiseResolver<void> const & rl, F const & f, T const & msg) {
+    static void invoke(PromiseResolver<void> const & rl, F f, T const & msg) {
         f(msg).then(rl.resolve, rl.reject);
     }
 };
@@ -131,7 +143,7 @@ struct QMessageResult
     }
 
     template<typename F>
-    void invoke(F const & f) const {
+    void invoke(F f) const {
         PromiseResolver<R> const & rl = resolvers[index++];
         try {
             QMessageResultResolve<R, T, F>::invoke(rl, f, msg);
@@ -141,7 +153,7 @@ struct QMessageResult
     }
 
     template<typename F>
-    void invoke2(F const & f) const {
+    void invoke2(F f) const {
         try {
             f(msg);
         }  catch (...) {
@@ -183,13 +195,13 @@ public:
     }
 
     template<typename T, typename R, typename F>
-    void invoke(F const & f) const
+    void invoke(F f) const
     {
         return static_cast<QMessageResultSharedData<T, R> const &>(*pointer_).result_.invoke(f);
     }
 
     template<typename T, typename R, typename F>
-    void invoke2(F const & f) const
+    void invoke2(F f) const
     {
         return static_cast<QMessageResultSharedData<T, R> const &>(*pointer_).result_.invoke2(f);
     }

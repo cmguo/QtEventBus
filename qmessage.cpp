@@ -75,5 +75,6 @@ QtPromise::QPromise<QVector<QVariant> > QSimpleMessage::publish(QEventQueue *que
 void QSimpleMessage::mergeTo(QMessageBase *msg)
 {
     // TODO:
+    (void) msg;
     assert(false);
 }

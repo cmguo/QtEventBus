@@ -88,3 +88,14 @@ QMessageBase * QEventBus::get(const QByteArray &topic) const
     }
     return it->second;
 }
+
+void QEventBus::put(const QByteArray &topic, QMessageBase *msg)
+{
+    auto rt = topics_.insert(std::make_pair(topic, msg));
+    if (!rt.second) {
+        QSimpleMessage * old = static_cast<QSimpleMessage*>(rt.first->second);
+        old->mergeTo(msg);
+        rt.first->second = msg;
+        delete old;
+    }
+}

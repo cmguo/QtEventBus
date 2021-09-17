@@ -27,7 +27,7 @@ public:
     static void test();
 
 public:
-    QVariant operator()(QByteArray const & topic, QVariant const & msg);
+    QVariant operator()(QByteArray const & topic, QVariant const & msg) const;
 
 private:
     static QVariant invoke(QObject * receiver, QByteArray const & target, QVariant args);

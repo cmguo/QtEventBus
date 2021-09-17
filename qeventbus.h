@@ -111,6 +111,21 @@ public:
         }
     }
 
+    template<typename F>
+    void subscribe(QByteArray const & topic, F o, bool recv_stick = false) {
+        return subscribe(topic, (QMessageBase::observ_t) [o] (QByteArray const & topic, QVariant const & message) {
+            return VectorResult<decltype(o(topic,message))>::toVar(o, topic, message);
+        }, recv_stick);
+    }
+
+
+    template<typename F>
+    void subscribe(QObject const * c, QByteArray const & topic, F o, bool recv_stick = false) {
+        return subscribe(c, topic, (QMessageBase::observ_t) [o] (QByteArray const & topic, QVariant const & message) {
+            return VectorResult<decltype(o(topic,message))>::toVar(o, topic, message);
+        }, recv_stick);
+    }
+
     QtPromise::QPromise<QVector<QVariant>> publish(QByteArray const & topic, QVariant const & msg = QVariant());
 
     // from queue
@@ -130,13 +145,7 @@ private:
             void(*id)() = &event_id<T>;
             messages_.insert(std::make_pair(id, msg)).first;
             if (!msg->topic().isEmpty()) {
-                auto rt = topics_.insert(std::make_pair(msg->topic(), msg));
-                if (!rt.second) {
-                    QSimpleMessage * old = static_cast<QSimpleMessage*>(rt.first->second);
-                    old->mergeTo(msg);
-                    rt.first->second = msg;
-                    delete old;
-                }
+                put(msg->topic(), msg);
             }
         }
         return *msg;
@@ -160,6 +169,8 @@ private:
     QMessageBase & get(QByteArray const & topic);
 
     QMessageBase * get(QByteArray const & topic) const;
+
+    void put(QByteArray const & topic, QMessageBase * msg);
 
 private:
     template<typename T>

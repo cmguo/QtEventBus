@@ -11,6 +11,11 @@ QSubscriber::QSubscriber(QObject *receiver, const QByteArray &target)
     };
 }
 
+QVariant QSubscriber::operator()(const QByteArray &topic, const QVariant &msg) const
+{
+    return observ_(topic, msg);
+}
+
 QVariant QSubscriber::invoke(QObject *receiver, const QByteArray &target, QVariant args)
 {
     QMetaObject const & meta = *receiver->metaObject();
@@ -95,6 +100,9 @@ void QSubscriber::test()
         return QtPromise::resolve(msg.i + msg.j);
     });
     bus.subscribe("test", QSubscriber(&receiver, &TestReceiver::test));
+    bus.subscribe("test", [](auto topic, auto message) {
+        qDebug() << "test" << topic << message;
+    });
     bus.publish(TestMessage{1, 2}).then([](QVector<int> const & result) {
         qDebug() << "TestMessage" << result;
     }, [](std::exception & e) {
@@ -112,7 +120,7 @@ void QSubscriber::test()
     QMetaType::registerConverter<QVariantList, VoidMessage>([](auto & l) {
         return VoidMessage{l[0].toInt(), l[1].toInt()};
     });
-    bus.subscribe<VoidMessage>([] (auto msg) {
+    bus.subscribe<VoidMessage>([] (auto) {
         return QtPromise::resolve();
     });
     bus.subscribe("void", QSubscriber(&receiver, &TestReceiver::test));
@@ -127,9 +135,3 @@ void QSubscriber::test()
         qDebug() << e.what();
     });
 }
-
-QVariant QSubscriber::operator()(const QByteArray &topic, const QVariant &msg)
-{
-    return observ_(topic, msg);
-}
-
