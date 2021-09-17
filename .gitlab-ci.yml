@@ -1,0 +1,11 @@
+stages:
+  - deploy
+
+deploy-job:
+  stage: deploy
+  tags:
+    - "qt-conan"
+  script:
+    - echo "deploy-to-conan"
+    - git rev-parse HEAD
+    - py conanfile.py
