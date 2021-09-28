@@ -8,4 +8,5 @@ deploy-job:
   script:
     - echo "deploy-to-conan"
     - git rev-parse HEAD
+    - cd QtEventBus
     - py conanfile.py
