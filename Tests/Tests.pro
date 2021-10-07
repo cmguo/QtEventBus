@@ -31,9 +31,9 @@ qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
-win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../ -lQtEventBus
-else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../ -lQtEventBusd
-else:unix: LIBS += -L$$OUT_PWD/../ -lQtEventBus
+win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../QtEventBus -lQtEventBus
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../QtEventBus -lQtEventBusd
+else:unix: LIBS += -L$$OUT_PWD/../QtEventBus -lQtEventBus
 
-INCLUDEPATH += $$PWD/../
-DEPENDPATH += $$PWD/../
+INCLUDEPATH += $$PWD/../QtEventBus
+DEPENDPATH += $$PWD/../QtEventBus
