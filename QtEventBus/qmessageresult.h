@@ -124,13 +124,13 @@ struct QMessageResultResolve<void, T, F, QtPromise::QPromise<void>> {
 };
 
 template<typename T, typename R>
-struct QMessageResult
+struct QMessageResultData : public QSharedData
 {
     T const msg;
     mutable std::atomic<int> index{0};
     QVector<PromiseResolver<R>> resolvers;
 
-    QMessageResult(T const msg) : msg(msg) {}
+    QMessageResultData(T const msg) : msg(msg) {}
 
     QtPromise::QPromise<typename VectorResult<R>::type> await(int n) {
         QVector<QtPromise::QPromise<R>> promises;
@@ -161,53 +161,39 @@ struct QMessageResult
     }
 };
 
-template<typename T, typename R>
-class QMessageResultSharedData : public QSharedData
-{
-public:
-    QMessageResultSharedData(T const & msg)
-        : result_(msg)
-    {
-    }
-    QMessageResult<T, R> result_;
-};
-
-class QMessageResultPointer
+class QMessageResultPointer : QExplicitlySharedDataPointer<QSharedData>
 {
 public:
     QMessageResultPointer() {}
 
     template<typename T>
     QMessageResultPointer(T const & msg)
-        : pointer_(new QMessageResultSharedData<T, typename QMessageMeta<T>::result>(msg))
+        : QExplicitlySharedDataPointer(new QMessageResultData<T, typename QMessageMeta<T>::result>(msg))
     {
     }
 
     QMessageResultPointer(QVariant const & msg)
-        : pointer_(new QMessageResultSharedData<QVariant, QVariant>(msg))
+        : QExplicitlySharedDataPointer(new QMessageResultData<QVariant, QVariant>(msg))
     {
     }
 
 public:
     template<typename T, typename R>
     QtPromise::QPromise<typename VectorResult<R>::type> await(int n) {
-        return static_cast<QMessageResultSharedData<T, R> &>(*pointer_).result_.await(n);
+        return static_cast<QMessageResultData<T, R> &>(**this).await(n);
     }
 
     template<typename T, typename R, typename F>
     void invoke(F f) const
     {
-        return static_cast<QMessageResultSharedData<T, R> const &>(*pointer_).result_.invoke(f);
+        return static_cast<QMessageResultData<T, R> const &>(**this).invoke(f);
     }
 
     template<typename T, typename R, typename F>
     void invoke2(F f) const
     {
-        return static_cast<QMessageResultSharedData<T, R> const &>(*pointer_).result_.invoke2(f);
+        return static_cast<QMessageResultData<T, R> const &>(**this).invoke2(f);
     }
-
-private:
-    QSharedDataPointer<QSharedData> pointer_;
 };
 
 #endif // QMESSAGERESULT_H

@@ -50,7 +50,7 @@ void test()
     });
     bus.subscribe("test", QSubscriber(&receiver, &TestReceiver::test));
     bus.subscribe("test", [](auto topic, auto message) {
-        qDebug() << "test" << topic << message;
+        qDebug() << "test" << topic << message.toList();
     });
     bus.publish(TestMessage{1, 2}).then([](QVector<int> const & result) {
         qDebug() << "TestMessage public result:" << result;
