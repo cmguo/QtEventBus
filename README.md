@@ -17,6 +17,7 @@ A event bus for Qt.
 + 异步 publish，订阅者可以自定义接收线程（QObject的驻扎线程）
 + 生命期安全，当接收 QObject 销毁时，异步消息会自动清空
 + 生命期安全，当接收 QObject 销毁时，信号连接（订阅）会自动删除
++ 进一步方案说明：[基于 Qt 实现消息总线](https://blog.csdn.net/luansxx/article/details/120776538?spm=1001.2014.3001.5501)
 
 # 使用：
 + 创建一个消息类
@@ -40,7 +41,7 @@ Q_MESSAGE_META(QTestMessage, false, true, nullptr)
 + 订阅、发布消息
 ```cpp
 QEventBus bus; // or QEventBus::globalInstance()
-bus.subscribe<QTestMessage>(test, [](auto & m) {
+bus.subscribe<QTestMessage>([](auto & m) {
     qDebug() << m.name.c_str();
 });
 bus.publish(QTestMessage());
@@ -72,7 +73,7 @@ bus.subscribe<TestMessage>([] (auto msg) {
 });
 
 bus.publish(TestMessage{1, 2}).then([](QVector<int> const & result) {
-    qDebug() << "TestMessage public result:" << result;
+    qDebug() << "TestMessage public result:" << result; // result = {3}
 }, [](std::exception & e) {
     qDebug() << e.what();
 });
